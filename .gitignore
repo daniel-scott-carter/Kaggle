@@ -2,3 +2,5 @@
 .\idea
 .idea
 .csv
+__pycache__
+\CSVData\*
