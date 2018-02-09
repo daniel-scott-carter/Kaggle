@@ -1,14 +1,11 @@
 import numpy as np
-import pandas as pd
-from sklearn import preprocessing
 from sklearn.preprocessing import StandardScaler
 
 # ------------------------------------------------------------------------------------
 # Import Classifiers.py
 import Classifiers as cl
-from random import randint
 import Ensemble as en
-import GAEnsembleSelection
+from Ensemble import GAEnsembleSelection
 
 scaler = StandardScaler()
 df = cl.load_data()
