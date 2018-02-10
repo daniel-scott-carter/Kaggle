@@ -1,6 +1,10 @@
 from ETL.DataLoader import DataLoader
 
+import pandas as pd
+
 loader = DataLoader()
 
-loader.DataLoader()
-loader.AnotherMethod()
+returned = loader.TitanicLoader()
+
+print(returned.dtypes)
+print(returned.describe(), "\n")
