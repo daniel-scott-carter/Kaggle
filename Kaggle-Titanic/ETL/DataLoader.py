@@ -43,12 +43,12 @@ class DataLoader:
 
 
         # Calculate each persons entourage/family size (+1 to include the person themself)
-        if not "EntourageSize" in dataframe.columns:
-            dataframe["EntourageSize"] = dataframe["SibSp"] + dataframe["Parch"] + 1
+        if not "FamilySize" in dataframe.columns:
+            dataframe["FamilySize"] = dataframe["SibSp"] + dataframe["Parch"] + 1
 
-        if not "IsALone" in dataframe.columns:
-            dataframe["IsAlone"] = 1
-            dataframe["IsAlone"].loc[dataframe["EntourageSize"] > 1] = 0
+        if not "FamilyPresent" in dataframe.columns:
+            dataframe["FamilyPresent"] = 1
+            dataframe["FamilyPresent"].loc[dataframe["FamilySize"] > 1] = 0
 
         if not "Title" in dataframe.columns:
             dataframe["Title"] = dataframe["Name"].str.split(", ", expand=True)[1].str.split(".", expand=True)[0]
@@ -103,6 +103,39 @@ class DataLoader:
 
         return row
 
+    def getPartyStats(self, dataframe):
+
+        dataframe["Age"] = dataframe["Age"].astype(int)
+        dataframe["FamilySize"] = dataframe["FamilySize"].astype(int)
+
+        aggregation = {
+            "Age": {
+                "maxPartyAge":"max",
+                "avgPartyAge":"mean",
+                "partyMemberCount":"count"
+            },
+            "FamilySize": {
+                "avgPartyFamilySize":"mean",
+                "maxPartyFamilySize":"max"
+            }
+        }
+
+        ticketGroups = dataframe.groupby("Ticket").agg(aggregation)
+
+        # ticketGroups = dataframe.groupby("Ticket").agg({"Age": ["max", "mean", "count"],
+        #                                                "FamilySize": ["mean", "max"],
+        #                                                 "Sex": ["mode"]})
+
+        ticketGroups.columns = ticketGroups.columns.get_level_values(0)
+        ticketGroups.columns = ["maxPartyAge", "avgPartyAge", "partyMemberCount", "avgPartyFamilySize", "maxPartyFamilySize"]
+
+        dataframe = dataframe.join(other=ticketGroups, on="Ticket")
+
+        self.exploreDataframe(dataframe)
+        print("")
+
+
+
     def _checkEmptyList(self, theList):
         if not theList:
             return True
@@ -113,8 +146,8 @@ class DataLoader:
     def TitanicLoader(self, inputPath):
         df = pd.read_csv(inputPath, infer_datetime_format=True, encoding="utf-8")
 
-        print("---- Initial exploration: ----")
-        self.exploreDataframe(df)
+        # print("---- Initial exploration: ----")
+        # self.exploreDataframe(df)
 
         df = self._fillNACols(df)
         df = self._correctColumnTypes(df)
@@ -122,6 +155,8 @@ class DataLoader:
 
         self.excluded_titles = (df["Title"].value_counts() < 5)
         df = df.apply(self._formatRows, broadcast=True, reduce=False, axis=1)
+
+        self.getPartyStats(df)
 
         print("---- Post Feature Engineering exploration: ----")
         print(df['Title'].value_counts())
