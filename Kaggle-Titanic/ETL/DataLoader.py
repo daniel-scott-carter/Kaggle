@@ -1,10 +1,17 @@
 import pandas as pd
 import re
 
+from DataVisualisation.GraphsAndPlotsBuilder import GraphsAndPlotsBuilder
+
+from sklearn import preprocessing
+
 class DataLoader:
 
     variable = "I'm a variable"
     excluded_titles = None
+
+    # We want display to show all of the columns, rather than skip the middle ones
+    pd.set_option("display.max_columns", None)
 
     def exploreDataframe(self, dataframe):
         print("Info: ")
@@ -32,7 +39,7 @@ class DataLoader:
         df['Age'].fillna(df['Age'].median(), inplace=True)
 
         # complete embarked with mode
-        df['Embarked'].fillna(df['Embarked'].mode()[0], inplace=True)
+        #df['Embarked'].fillna(df['Embarked'].mode()[0], inplace=True)
 
         # complete missing fare with median
         df['Fare'].fillna(df['Fare'].median(), inplace=True)
@@ -62,24 +69,27 @@ class DataLoader:
         if not "Deck" in dataframe.columns:
             dataframe["Deck"] = "Unknown"
 
+        if not "Port" in dataframe.columns:
+            dataframe["Port"] = dataframe["Embarked"]
+
         return dataframe
 
 
     def _formatRows(self, row):
 
-        if row["Sex"] is "male":
+        if row["Sex"] == "male":
             row["Sex"] = 1
         else:
             row["Sex"] = 0
 
         # Drop any rows where embarked is 0 later
-        if row["Embarked"] is not "" and row["Embarked"] is not None and row["Embarked"]:
+        if row["Embarked"] != "" and row["Embarked"] is not None and row["Embarked"]:
             row["Embarked"] = 1
         else:
             row["Embarked"] = 0
 
         # Get only the cabin level (A, B, C etc) where n = null (filter later)
-        if row["Cabin"] is not "" and row["Cabin"] is not None:
+        if row["Cabin"] != "" and row["Cabin"] is not None:
             cabinString = row["Cabin"]
 
             if cabinString[:1].isalpha():
@@ -90,6 +100,8 @@ class DataLoader:
 
             if not self._checkEmptyList(number):
                 number = int(number[0])
+
+                row["Cabin"] = number
 
                 if number % 2 == 0:
                     row["RoomSide"] = "Port"
@@ -121,11 +133,6 @@ class DataLoader:
         }
 
         ticketGroups = dataframe.groupby("Ticket").agg(aggregation)
-
-        # ticketGroups = dataframe.groupby("Ticket").agg({"Age": ["max", "mean", "count"],
-        #                                                "FamilySize": ["mean", "max"],
-        #                                                 "Sex": ["mode"]})
-
         ticketGroups.columns = ticketGroups.columns.get_level_values(0)
         ticketGroups.columns = ["maxPartyAge", "avgPartyAge", "partyMemberCount", "avgPartyFamilySize", "maxPartyFamilySize"]
 
@@ -134,7 +141,14 @@ class DataLoader:
         self.exploreDataframe(dataframe)
         print("")
 
+        return dataframe
 
+    def encodeCategroicalVariables(self, dataframe):
+
+        cols_to_transform = ["Title", "RoomSide", "Deck", "Port"]
+        dataframe = pd.get_dummies(dataframe, columns=cols_to_transform)
+
+        return dataframe
 
     def _checkEmptyList(self, theList):
         if not theList:
@@ -156,11 +170,21 @@ class DataLoader:
         self.excluded_titles = (df["Title"].value_counts() < 5)
         df = df.apply(self._formatRows, broadcast=True, reduce=False, axis=1)
 
-        self.getPartyStats(df)
+        df = self.getPartyStats(df)
+        print(df['Title'].value_counts())
+
+        df = self.encodeCategroicalVariables(df)
+
+        df = df.drop(["Name", "Ticket", "PassengerId", "Cabin", "Embarked"], axis=1)
 
         print("---- Post Feature Engineering exploration: ----")
-        print(df['Title'].value_counts())
+
         self.exploreDataframe(df)
+        print("")
+
+        gb = GraphsAndPlotsBuilder()
+        gb.get_feature_correlations(df)
+        print("")
 
         return df
 
