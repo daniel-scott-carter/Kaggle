@@ -1,6 +1,9 @@
-./idea
-.\idea
-.idea
-.csv
-__pycache__
+*./idea
+*.\idea
+*.idea
+*.csv
+*__pycache__
 \CSVData\*
+*.png
+Plots/*
+Plots/

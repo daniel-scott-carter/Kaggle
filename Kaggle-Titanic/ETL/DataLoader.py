@@ -46,6 +46,13 @@ class DataLoader:
 
         return df
 
+    def _fillNACabin(self, df):
+
+        df["RoomNum"] = df["RoomNum"].astype(int)
+        df["RoomNum"] = df["RoomNum"].replace(0, df["RoomNum"].median())
+
+        return df
+
     def _initialiseRows(self, dataframe):
 
 
@@ -72,6 +79,9 @@ class DataLoader:
         if not "Port" in dataframe.columns:
             dataframe["Port"] = dataframe["Embarked"]
 
+        if not "RoomNum" in dataframe.columns:
+            dataframe["RoomNum"] = 0
+
         return dataframe
 
 
@@ -92,16 +102,16 @@ class DataLoader:
         if row["Cabin"] != "" and row["Cabin"] is not None:
             cabinString = row["Cabin"]
 
-            if cabinString[:1].isalpha():
-                row["Deck"] = cabinString[:1]
+            if cabinString[0].isalpha():
+                row["Deck"] = cabinString[0]
 
             number = re.findall(r'^\D*(\d+)', cabinString)
 
-
             if not self._checkEmptyList(number):
+
                 number = int(number[0])
 
-                row["Cabin"] = number
+                row["RoomNum"] = number
 
                 if number % 2 == 0:
                     row["RoomSide"] = "Port"
@@ -111,7 +121,6 @@ class DataLoader:
         # use excludedTitles to replace any Titles with a freq < 5 with 'Other'
         if self.excluded_titles.loc[row["Title"]] == True:
             row["Title"] = "Other"
-
 
         return row
 
@@ -143,7 +152,7 @@ class DataLoader:
 
         return dataframe
 
-    def encodeCategroicalVariables(self, dataframe):
+    def encodeCategoricalVariables(self, dataframe):
 
         cols_to_transform = ["Title", "RoomSide", "Deck", "Port"]
         dataframe = pd.get_dummies(dataframe, columns=cols_to_transform)
@@ -173,9 +182,11 @@ class DataLoader:
         df = self.getPartyStats(df)
         print(df['Title'].value_counts())
 
-        df = self.encodeCategroicalVariables(df)
+        df = self.encodeCategoricalVariables(df)
 
-        df = df.drop(["Name", "Ticket", "PassengerId", "Cabin", "Embarked"], axis=1)
+        df = df.drop(["Name", "Ticket", "PassengerId", "Embarked", "Cabin"], axis=1)
+
+        df = self._fillNACabin(df)
 
         print("---- Post Feature Engineering exploration: ----")
 
