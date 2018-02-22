@@ -35,6 +35,18 @@ class DataLoader:
 
         return dataframe
 
+    def _finaliseColumnTypers(self, dataframe):
+
+        dataframe["Survived"] = dataframe["Survived"].astype(bool)
+        dataframe["Pclass"] = dataframe["Pclass"].astype(int)
+        dataframe["Sex"] = dataframe["Sex"].astype(bool)
+        dataframe["SibSp"] = dataframe["SibSp"].astype(int)
+        dataframe["Parch"] = dataframe["Parch"].astype(int)
+        dataframe["Fare"] = dataframe["Fare"].astype(float)
+        dataframe["FamilyPresent"] = dataframe["FamilyPresent"].astype(bool)
+
+        return dataframe
+
     def _fillNACols(self, df):
         df['Age'].fillna(df['Age'].median(), inplace=True)
 
@@ -188,13 +200,16 @@ class DataLoader:
 
         df = self._fillNACabin(df)
 
+        df = self._finaliseColumnTypers(df)
+
         print("---- Post Feature Engineering exploration: ----")
 
-        self.exploreDataframe(df)
+        #self.exploreDataframe(df)
         print("")
 
-        gb = GraphsAndPlotsBuilder()
-        gb.get_feature_correlations(df)
+
+        #gb = GraphsAndPlotsBuilder()
+        #gb.get_feature_correlations(df)
         print("")
 
         return df
