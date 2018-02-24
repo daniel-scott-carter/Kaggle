@@ -168,6 +168,8 @@ class ClassifierEnsemble:
                 cv=cv_split,
                 scoring='roc_auc',
                 n_jobs=-1)
+
+
             best_search.fit(trainingDataframe[predictorColumns], trainingDataframe[labelColumn])
             run = time.perf_counter() - start
 
@@ -186,12 +188,14 @@ class ClassifierEnsemble:
         return None
 
     def getAndScoreVotingEnsemble(self, trainingDataFrame, predictorColumns, labelColumn, votingMethod="hard"):
+        cv_split = model_selection.ShuffleSplit(n_splits=10, test_size=.3, train_size=.6, random_state=0)
 
         voter = ensemble.VotingClassifier(estimators=self.MLA,
                                                voting=votingMethod)
         voter_cv = model_selection.cross_validate(voter,
-                                                       trainingDataFrame[predictorColumns],
-                                                       trainingDataFrame[labelColumn])
+                                                trainingDataFrame[predictorColumns],
+                                                trainingDataFrame[labelColumn],
+                                                cv = cv_split)
 
         voter.fit(trainingDataFrame[predictorColumns],
                        trainingDataFrame[labelColumn])
