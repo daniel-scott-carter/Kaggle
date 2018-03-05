@@ -7,12 +7,15 @@ import sklearn.linear_model as linear_model
 import sklearn.naive_bayes as naive_bayes
 import sklearn.neighbors as neighbors
 import sklearn.svm as svm
+from sklearn import preprocessing
 import sklearn.tree as tree
 import sklearn.discriminant_analysis as discriminant_analysis
 import sklearn.gaussian_process as gaussian_process
 import time as time
 
 class ClassifierEnsemble:
+
+    one_weight = 0.0
 
     # https://www.kaggle.com/ldfreeman3/a-data-science-framework-to-achieve-99-accuracy
     MLA = [
@@ -153,14 +156,55 @@ class ClassifierEnsemble:
         # }]
     ]
 
+    def calculate_weights(self, trainingDataFrame, labelColumn):
 
-    def trainEnsemble(self, trainingDataframe, predictorColumns, labelColumn):
+        #global one_weight
 
-        cv_split = model_selection.ShuffleSplit(n_splits=10, test_size=.3, train_size=.6, random_state=0)
+        trainingLabels = trainingDataFrame[labelColumn].values
+
+        one_count = 0.0
+        zero_count = 0.0
+
+        for i in trainingLabels:
+            if i == 1:
+                one_count += 1.0
+            if i == 0:
+                zero_count += 1.0
+
+        if one_count > zero_count:
+            self.one_weight = one_count / zero_count
+
+        if one_count < zero_count:
+            self.one_weight = zero_count / one_count
+
+        print("One Count: ", one_count)
+        print("Zero Count: ", zero_count)
+        print("One Weight: ", self.one_weight)
+        print("")
+
+        #return one_weight
+
+    def trainAllClassifiers(self, trainingDataFrame, predictorColumns, labelColumn):
+
+        #self.calculate_weights(trainingDataFrame, labelColumn)
+
+        trainingInputs = trainingDataFrame[predictorColumns]
+        trainingInputs = preprocessing.normalize(trainingInputs, axis=0)
+
+        trainingLabels = trainingDataFrame[labelColumn]
+
+        cv_split = model_selection.ShuffleSplit(n_splits=10, test_size=.3, train_size=.7, random_state=0)
 
         start_total = time.perf_counter()
 
         for algo, parameters in zip(self.MLA, self.parameterCandidates):
+
+            # if algo[0] == "etc" or algo[0] == "rfc" or algo[0] == "lr" or algo[0] == "svc":
+            #     parameters[0]["class_weight"] = [{1: self.one_weight}]
+            #
+            # print(parameters)
+            # print("")
+
             start = time.perf_counter()
             best_search = model_selection.GridSearchCV(
                 estimator=algo[1],
@@ -170,7 +214,7 @@ class ClassifierEnsemble:
                 n_jobs=-1)
 
 
-            best_search.fit(trainingDataframe[predictorColumns], trainingDataframe[labelColumn])
+            best_search.fit(trainingInputs, trainingLabels)
             run = time.perf_counter() - start
 
             best_param = best_search.best_params_
@@ -188,14 +232,21 @@ class ClassifierEnsemble:
         return None
 
     def getAndScoreVotingEnsemble(self, trainingDataFrame, predictorColumns, labelColumn, votingMethod="hard"):
-        cv_split = model_selection.ShuffleSplit(n_splits=10, test_size=.3, train_size=.6, random_state=0)
+
+        trainingInputs = trainingDataFrame[predictorColumns]
+        #trainingInputs = preprocessing.normalize(trainingInputs, axis=0)
+
+        trainingLabels = trainingDataFrame[labelColumn]
+
+        cv_split = model_selection.ShuffleSplit(n_splits=10, test_size=.3, train_size=.7, random_state=0)
 
         voter = ensemble.VotingClassifier(estimators=self.MLA,
                                                voting=votingMethod)
+
         voter_cv = model_selection.cross_validate(voter,
-                                                trainingDataFrame[predictorColumns],
-                                                trainingDataFrame[labelColumn],
-                                                cv = cv_split)
+                                                  trainingInputs,
+                                                  trainingLabels,
+                                                  cv = cv_split)
 
         voter.fit(trainingDataFrame[predictorColumns],
                        trainingDataFrame[labelColumn])
@@ -210,6 +261,11 @@ class ClassifierEnsemble:
             votingMethod,
             voter_cv['test_score'].std() * 100 * 3))
         print('-' * 10)
+
+        def getAllClassifierPredictions(self, trainingDataFrame, predictorColumns, labelColumn):
+            print("doSomething")
+
+
 
 
 

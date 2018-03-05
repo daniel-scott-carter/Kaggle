@@ -18,8 +18,10 @@ index = np.argwhere(dataframe.columns.values == "Survived")
 Predictors = np.delete(dataframe.columns.values, index)
 
 if __name__ == '__main__':
-    ensemble.trainEnsemble(dataframe, Predictors, Target)
+    ensemble.trainAllClassifiers(dataframe, Predictors, Target)
+
     ensemble.getAndScoreVotingEnsemble(dataframe, Predictors, Target, "hard")
+
 
 
 
