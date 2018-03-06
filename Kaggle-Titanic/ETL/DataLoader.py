@@ -1,4 +1,5 @@
 import pandas as pd
+import numpy as np
 import re
 
 from DataVisualisation.GraphsAndPlotsBuilder import GraphsAndPlotsBuilder
@@ -38,7 +39,7 @@ class DataLoader:
     def _finaliseColumnTypers(self, dataframe):
 
         dataframe["Survived"] = dataframe["Survived"].astype(bool)
-        dataframe["Pclass"] = dataframe["Pclass"].astype(int)
+        #dataframe["Pclass"] = dataframe["Pclass"].astype(int)
         dataframe["Sex"] = dataframe["Sex"].astype(bool)
         dataframe["SibSp"] = dataframe["SibSp"].astype(int)
         dataframe["Parch"] = dataframe["Parch"].astype(int)
@@ -159,14 +160,11 @@ class DataLoader:
 
         dataframe = dataframe.join(other=ticketGroups, on="Ticket")
 
-        self.exploreDataframe(dataframe)
-        print("")
-
         return dataframe
 
     def encodeCategoricalVariables(self, dataframe):
 
-        cols_to_transform = ["Title", "RoomSide", "Deck", "Port"]
+        cols_to_transform = ["Title", "RoomSide", "Deck", "Port", "Pclass"]
         dataframe = pd.get_dummies(dataframe, columns=cols_to_transform)
 
         return dataframe
@@ -192,7 +190,7 @@ class DataLoader:
         df = df.apply(self._formatRows, broadcast=True, reduce=False, axis=1)
 
         df = self.getPartyStats(df)
-        print(df['Title'].value_counts())
+        #print(df['Title'].value_counts())
 
         df = self.encodeCategoricalVariables(df)
 
@@ -205,12 +203,12 @@ class DataLoader:
         print("---- Post Feature Engineering exploration: ----")
 
         #self.exploreDataframe(df)
-        print("")
+        #print("")
 
 
         #gb = GraphsAndPlotsBuilder()
         #gb.get_feature_correlations(df)
-        print("")
+        #print("")
 
         return df
 
