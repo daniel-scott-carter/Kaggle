@@ -190,7 +190,7 @@ class DataLoader:
         df = df.apply(self._formatRows, broadcast=True, reduce=False, axis=1)
 
         df = self.getPartyStats(df)
-        print(df['Title'].value_counts())
+        #print(df['Title'].value_counts())
 
         df = self.encodeCategoricalVariables(df)
 
@@ -208,7 +208,7 @@ class DataLoader:
 
         #gb = GraphsAndPlotsBuilder()
         #gb.get_feature_correlations(df)
-        print("")
+        #print("")
 
         return df
 

@@ -7,6 +7,8 @@ import sklearn.linear_model as linear_model
 import sklearn.naive_bayes as naive_bayes
 import sklearn.neighbors as neighbors
 import sklearn.svm as svm
+
+import pandas as pd
 from sklearn import preprocessing
 import sklearn.tree as tree
 import sklearn.discriminant_analysis as discriminant_analysis
@@ -16,6 +18,8 @@ import time as time
 class ClassifierEnsemble:
 
     one_weight = 0.0
+
+    fitClassifiers = []
 
     # https://www.kaggle.com/ldfreeman3/a-data-science-framework-to-achieve-99-accuracy
     MLA = [
@@ -197,6 +201,8 @@ class ClassifierEnsemble:
 
         start_total = time.perf_counter()
 
+        messages = []
+
         for algo, parameters in zip(self.MLA, self.parameterCandidates):
 
             # if algo[0] == "etc" or algo[0] == "rfc" or algo[0] == "lr" or algo[0] == "svc":
@@ -219,13 +225,23 @@ class ClassifierEnsemble:
 
             best_param = best_search.best_params_
             best_score = best_search.best_score_
-            print('The best parameter for {} is {} with a runtime of {:.2f} seconds, score of {:.2f}'.format(algo[1].__class__.__name__,
+            # print('The best parameter for {} is {} with a runtime of {:.2f} seconds, score of {:.2f}'.format(algo[1].__class__.__name__,
+            #
+            #                                                             best_param, run, best_score))
+            messages.append('The best parameter for {} is {} with a runtime of {:.2f} seconds, score of {:.2f}'.format(algo[1].__class__.__name__,
                                                                             best_param, run, best_score))
+
             algo[1].set_params(**best_param)
 
-        run_total = time.perf_counter() - start_total
-        print('Total optimization time was {:.2f} minutes.'.format(run_total / 60))
+            fitModel = algo[1].fit(trainingDataFrame[predictorColumns],
+                       trainingDataFrame[labelColumn])
 
+            self.fitClassifiers.append(fitModel)
+
+        run_total = time.perf_counter() - start_total
+
+        print(*messages, sep='\n')
+        print('Total optimization time was {:.2f} minutes.'.format(run_total / 60))
         print('-' * 10)
 
 
@@ -262,8 +278,29 @@ class ClassifierEnsemble:
             voter_cv['test_score'].std() * 100 * 3))
         print('-' * 10)
 
-        def getAllClassifierPredictions(self, trainingDataFrame, predictorColumns, labelColumn):
-            print("doSomething")
+
+    def getAllClassifierPredictions(self, testDataFrame, predictorColumns, labelColumn):
+        print("doSomething")
+
+        inputPredictors = testDataFrame[predictorColumns]
+        inputPredictors = preprocessing.normalize(inputPredictors, axis=0)
+
+        inputLabels = testDataFrame[labelColumn]
+
+        predictions_df = pd.DataFrame()
+
+        for classifier in self.fitClassifiers:
+
+            model_preds = classifier.predict(inputPredictors)
+            #predictions_df.append(model_preds[0])
+            print(model_preds)
+            print()
+
+        print(predictions_df)
+        print()
+
+        return predictions_df
+
 
 
 
